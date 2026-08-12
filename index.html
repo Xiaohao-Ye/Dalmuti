@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>De Grote Dalmuti</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;600;700&family=Jersey+10&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<canvas id="bg"></canvas>
+
+<div id="app">
+
+  <!-- ===== START SCREEN ===== -->
+  <div id="screen-start" class="screen">
+    <h1 id="title" class="game-title">DE GROTE DALMUTI</h1>
+    <div class="start-panels">
+      <div class="panel start-panel">
+        <div class="panel-label">TEGEN BOTS</div>
+        <div class="start-row">
+          <span class="start-label">Aantal spelers</span>
+          <div id="player-count" class="seg">
+            <button class="seg-btn" data-n="4">4</button>
+            <button class="seg-btn active" data-n="5">5</button>
+            <button class="seg-btn" data-n="6">6</button>
+            <button class="seg-btn" data-n="7">7</button>
+          </div>
+        </div>
+        <button id="btn-start" class="btn btn-orange btn-big">SPELEN</button>
+      </div>
+      <div class="panel start-panel">
+        <div class="panel-label">ONLINE MET VRIENDEN</div>
+        <input id="mp-name" class="text-input" maxlength="14" placeholder="Je naam" autocomplete="off">
+        <button id="btn-create" class="btn btn-blue">KAMER MAKEN</button>
+        <div class="join-row">
+          <input id="mp-code" class="text-input code" maxlength="4" placeholder="CODE" autocomplete="off">
+          <button id="btn-join" class="btn btn-orange">DOE MEE</button>
+        </div>
+        <div id="mp-status" class="start-hint"></div>
+      </div>
+    </div>
+    <div class="start-hint">Speel je slechtste kaarten weg — wie het eerst<br>zijn hand leeg heeft wordt de Grote Dalmuti!</div>
+  </div>
+
+  <!-- ===== LOBBY ===== -->
+  <div id="screen-lobby" class="screen hidden">
+    <div class="panel lobby-panel">
+      <div class="panel-label">KAMER</div>
+      <div id="lobby-code" class="lobby-code">····</div>
+      <div class="lobby-hint">Deel deze code met je vrienden</div>
+      <ul id="lobby-players"></ul>
+      <div class="overlay-buttons">
+        <button id="btn-addbot" class="btn btn-blue">+ BOT</button>
+        <button id="btn-removebot" class="btn btn-blue">− BOT</button>
+        <button id="btn-lobby-start" class="btn btn-orange btn-big" disabled>START</button>
+        <button id="btn-lobby-leave" class="btn btn-red">VERLATEN</button>
+      </div>
+      <div id="lobby-status" class="lobby-hint"></div>
+    </div>
+  </div>
+
+  <!-- ===== GAME SCREEN ===== -->
+  <div id="screen-game" class="screen hidden">
+    <aside id="sidebar">
+      <div class="panel side-panel" id="panel-status">
+        <div id="round-label" class="round-label">RONDE 1</div>
+        <div id="trick-info" class="trick-info">VRIJE SLAG</div>
+      </div>
+      <div class="panel side-panel" id="panel-standings">
+        <div class="panel-label">SPELERS</div>
+        <ul id="standings"></ul>
+      </div>
+      <div class="panel side-panel grow" id="panel-log">
+        <div class="panel-label">LOGBOEK</div>
+        <div id="log"></div>
+      </div>
+      <div class="side-buttons">
+        <button id="btn-panels" class="btn btn-blue btn-small mobile-only">☰</button>
+        <button id="btn-sound" class="btn btn-blue btn-small">🔊</button>
+        <button id="btn-newgame" class="btn btn-red btn-small">MENU</button>
+      </div>
+    </aside>
+
+    <main id="table">
+      <div id="opponents"></div>
+      <div id="pile-area">
+        <div id="pile"></div>
+        <div id="pile-label"></div>
+      </div>
+      <div id="hand-area">
+        <div id="turn-banner" class="hidden">JOUW BEURT</div>
+        <div id="hand"></div>
+        <div id="actions">
+          <button id="btn-play" class="btn btn-orange" disabled>SPEEL</button>
+          <button id="btn-pass" class="btn btn-red" disabled>PAS</button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ===== OVERLAY (rondes / belasting / revolutie) ===== -->
+  <div id="overlay" class="hidden">
+    <div id="overlay-panel" class="panel overlay-panel"></div>
+  </div>
+
+  <div id="popups"></div>
+</div>
+
+<script src="js/bg.js"></script>
+<script src="js/game.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/net.js"></script>
+</body>
+</html>

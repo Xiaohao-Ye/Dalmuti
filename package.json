@@ -1,0 +1,12 @@
+{
+  "name": "de-grote-dalmuti",
+  "version": "1.0.0",
+  "private": true,
+  "description": "De Grote Dalmuti in Balatro-stijl — singleplayer en online multiplayer",
+  "scripts": {
+    "start": "node server/server.js"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  }
+}
