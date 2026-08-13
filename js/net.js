@@ -239,9 +239,13 @@ const Net = (() => {
         }));
         const mePos = ev.results.findIndex(r => r.idx === v.meIdx);
         const headline = UI.headlineFor(mePos, n, v.round);
-        const choice = await UI.showRoundEnd(rows, headline, { canContinue: ev.youAreHost });
-        if (choice === 'next') send({ t: 'nextround' });
-        else if (choice === 'stop') leave();
+        // NIET awaiten: een niet-host heeft alleen een verlaat-knop, en zolang
+        // die niet geklikt wordt zou de event-wachtrij blokkeren — het
+        // roundStart-event dat deze overlay sluit zou er dan achter blijven staan.
+        UI.showRoundEnd(rows, headline, { canContinue: ev.youAreHost }).then(choice => {
+          if (choice === 'next') send({ t: 'nextround' });
+          else if (choice === 'stop') leave();
+        });
         break;
       }
       case 'playerLeft':
