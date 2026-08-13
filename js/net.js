@@ -117,6 +117,7 @@ const Net = (() => {
         session = { code: m.code, token: m.token, name: m.name };
         localStorage.setItem(tokenKey(m.code), m.token);
         status('');
+        Music.start();
         break;
       }
       case 'lobby': {
@@ -173,7 +174,7 @@ const Net = (() => {
       }
       case 'giveback': {
         const view = UI.getView();
-        const ids = await UI.askGiveBack(m.k, m.receiverName, view ? view.myHand : []);
+        const ids = await UI.askGiveBack(m.k, m.receiverName, view ? view.myHand : [], m.received || []);
         send({ t: 'giveback', cardIds: ids });
         break;
       }
@@ -203,6 +204,7 @@ const Net = (() => {
         break;
       case 'revolution':
         UI.sfx.revolution();
+        Music.excite(1);
         UI.shake(true);
         if (ev.kind === 'groot') {
           UI.popup('GROTE REVOLUTIE!', 'big red');
@@ -286,8 +288,34 @@ const Net = (() => {
   $('#btn-lobby-start').addEventListener('click', () => send({ t: 'start' }));
   $('#btn-lobby-leave').addEventListener('click', leave);
 
+  // Deelbare uitnodigingslink: op mobiel via het deel-menu, anders naar het klembord
+  $('#btn-share').addEventListener('click', async () => {
+    if (!lobby) return;
+    const url = location.origin + location.pathname + '?kamer=' + lobby.code;
+    if (navigator.share) {
+      try { await navigator.share({ title: 'De Grote Dalmuti', text: 'Speel een potje Dalmuti mee!', url }); return; }
+      catch (e) { if (e.name === 'AbortError') return; }
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      UI.popup('Link gekopieerd! 🔗', '');
+    } catch (e) {
+      window.prompt('Kopieer de uitnodigingslink:', url);
+    }
+  });
+
   const savedName = localStorage.getItem('dalmuti.name');
   if (savedName) $('#mp-name').value = savedName;
+
+  // Geopend via een uitnodigingslink? Vul de code alvast in.
+  const invited = new URLSearchParams(location.search).get('kamer');
+  if (invited && canConnect()) {
+    const code = invited.toUpperCase().slice(0, 4);
+    $('#mp-code').value = code;
+    status(`Uitnodiging voor kamer ${code} — vul je naam in en klik DOE MEE.`);
+    history.replaceState(null, '', location.pathname);
+    $('#mp-name').focus();
+  }
 
   return { leave, get active() { return session !== null; } };
 })();

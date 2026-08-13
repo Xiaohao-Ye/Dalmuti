@@ -4,6 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>De Grote Dalmuti</title>
+<meta name="theme-color" content="#16102e">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;600;700&family=Jersey+10&display=swap" rel="stylesheet">
@@ -43,6 +47,7 @@
       </div>
     </div>
     <div class="start-hint">Speel je slechtste kaarten weg — wie het eerst<br>zijn hand leeg heeft wordt de Grote Dalmuti!</div>
+    <button id="btn-rules-start" class="btn btn-blue">📜 SPELREGELS</button>
   </div>
 
   <!-- ===== LOBBY ===== -->
@@ -53,6 +58,7 @@
       <div class="lobby-hint">Deel deze code met je vrienden</div>
       <ul id="lobby-players"></ul>
       <div class="overlay-buttons">
+        <button id="btn-share" class="btn btn-blue">🔗 DEEL LINK</button>
         <button id="btn-addbot" class="btn btn-blue">+ BOT</button>
         <button id="btn-removebot" class="btn btn-blue">− BOT</button>
         <button id="btn-lobby-start" class="btn btn-orange btn-big" disabled>START</button>
@@ -79,7 +85,9 @@
       </div>
       <div class="side-buttons">
         <button id="btn-panels" class="btn btn-blue btn-small mobile-only">☰</button>
-        <button id="btn-sound" class="btn btn-blue btn-small">🔊</button>
+        <button id="btn-rules" class="btn btn-blue btn-small" title="Spelregels">?</button>
+        <button id="btn-music" class="btn btn-blue btn-small" title="Muziek aan/uit">🎵</button>
+        <button id="btn-sound" class="btn btn-blue btn-small" title="Geluid aan/uit">🔊</button>
         <button id="btn-newgame" class="btn btn-red btn-small">MENU</button>
       </div>
     </aside>
@@ -106,12 +114,55 @@
     <div id="overlay-panel" class="panel overlay-panel"></div>
   </div>
 
+  <!-- ===== SPELREGELS ===== -->
+  <div id="rules" class="hidden">
+    <div class="panel overlay-panel rules-panel">
+      <div class="panel-label">📜 SPELREGELS</div>
+      <div class="rules-body">
+        <p><b>🎯 Doel</b><br>
+        Speel als eerste al je kaarten weg. De eerste die klaar is wordt de
+        <b>Grote Dalmuti</b>, de laatste de <b>Grote Sloeber</b>.</p>
+        <p><b>🂡 De kaarten</b><br>
+        Rang 1 (Dalmuti) is de beste, 12 (Boer) de slechtste. Het getal zegt ook
+        hoe vaak de kaart in het spel zit: twaalf Boeren, maar slechts één Dalmuti.
+        De twee <b>Narren 🃏</b> zijn wild: samen met andere kaarten tellen ze als die
+        rang; alleen gespeeld zijn ze de allerslechtste kaart.</p>
+        <p><b>▶ Een slag</b><br>
+        De leider legt één of meer gelijke kaarten (bijv. drie 9's). Daarna moet
+        iedereen precies evenveel kaarten van een <b>lagere</b> rang leggen, of passen.
+        Passen mag altijd — en komt de beurt terug, dan mag je alsnog meedoen.
+        Past iedereen, dan wint de laatste legger de slag en begint opnieuw.</p>
+        <p><b>💰 Belasting</b><br>
+        Aan het begin van elke ronde geeft de Grote Sloeber zijn 2 beste kaarten
+        aan de Grote Dalmuti, en de Kleine Sloeber 1 aan de Kleine Dalmuti.
+        Zij geven er evenveel naar keuze terug.</p>
+        <p><b>🔥 Revolutie</b><br>
+        Krijg je beide Narren gedeeld, dan mag je de revolutie uitroepen: die ronde
+        geen belasting. Doet de <b>Grote Sloeber</b> het, dan draaien álle rollen om!</p>
+        <p><b>🏆 Punten</b><br>
+        Elke ronde levert punten op naar eindpositie. De rangorde bepaalt ook de
+        zitvolgorde van de volgende ronde.</p>
+      </div>
+      <div class="overlay-buttons">
+        <button id="btn-rules-close" class="btn btn-orange">BEGREPEN</button>
+      </div>
+    </div>
+  </div>
+
   <div id="popups"></div>
 </div>
 
 <script src="js/bg.js"></script>
+<script src="js/music.js"></script>
 <script src="js/game.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/net.js"></script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
+</script>
 </body>
 </html>

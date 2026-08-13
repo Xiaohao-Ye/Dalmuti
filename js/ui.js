@@ -92,16 +92,20 @@ const UI = (() => {
 
   /* ================= KAARTEN ================= */
 
+  /* Nar toont een joker-symbool in plaats van het getal 13 */
+  const rankLabel = r => r === JOKER ? '🃏' : r;
+
   function makeCardEl(card, opts = {}) {
     const c = el('div', 'card' + (opts.small ? ' small' : '') + (opts.back ? ' back' : ''));
     if (opts.back) { c.innerHTML = '<div class="back-emblem">D</div>'; return c; }
     const info = RANK_INFO[card.rank];
     c.style.setProperty('--accent', RANK_COLORS[card.rank]);
+    const corner = card.rank === JOKER ? '<span class="joker-corner">🃏</span>' : card.rank;
     c.innerHTML = `
-      <div class="corner tl">${card.rank}</div>
+      <div class="corner tl">${corner}</div>
       <div class="card-art">${info.emoji}</div>
       <div class="card-name">${info.name}</div>
-      <div class="corner br">${card.rank}</div>`;
+      <div class="corner br">${corner}</div>`;
     return c;
   }
 
@@ -126,6 +130,16 @@ const UI = (() => {
     renderPile();
     renderHand();
     renderButtons();
+    // muziek-intensiteit stijgt naarmate de ronde spannender wordt
+    const active = v.players.filter(p => !p.finished);
+    if (active.length) {
+      const finishedFrac = (v.players.length - active.length) / v.players.length;
+      const minHand = Math.min.apply(null, active.map(p => p.handCount));
+      const urgency = minHand <= 4 ? (5 - minHand) / 5 : 0;
+      Music.setProgress(Math.max(finishedFrac, urgency * 0.85));
+    } else {
+      Music.setProgress(0);
+    }
   }
 
   function renderSidebar() {
@@ -136,7 +150,7 @@ const UI = (() => {
       info.classList.add('free');
     } else {
       info.innerHTML = numWrap(
-        `${view.trick.count}× lager dan <b>${view.trick.rank}</b>` +
+        `${view.trick.count}× lager dan <b>${rankLabel(view.trick.rank)}</b>` +
         `<span class="sub">${RANK_INFO[view.trick.rank].emoji} ${RANK_INFO[view.trick.rank].name} ligt</span>`);
       info.classList.remove('free');
     }
@@ -198,15 +212,45 @@ const UI = (() => {
       group.style.setProperty('--depth', plays.length - 1 - pi);
       group.style.setProperty('--tilt', ((play.playerIdx * 7919) % 11 - 5) + 'deg');
       play.cards.forEach(card => group.appendChild(makeCardEl(card, { small: !isTop })));
+      if (isTop) {
+        const owner = P(play.playerIdx);
+        group.appendChild(el('div',
+          'pile-owner' + (play.playerIdx === view.meIdx ? ' me' : ''),
+          `${owner.face} ${owner.name}`));
+      }
       pile.appendChild(group);
     });
     const label = $('#pile-label');
     if (view.pile.length) {
       const last = view.pile[view.pile.length - 1];
-      label.innerHTML = numWrap(`${last.count}× ${RANK_INFO[last.rank].name} — ${P(last.playerIdx).name}`);
+      label.innerHTML = numWrap(`${last.count}× ${RANK_INFO[last.rank].name}`);
     } else {
       label.textContent = view.roundOver ? '' : 'Nieuwe slag';
     }
+  }
+
+  /* Welke rangen kunnen de huidige slag verslaan? (null = geen beperking) */
+  function playableInfo() {
+    if (!canAct || !view || !view.trick) return null;
+    const k = view.trick.count;
+    const r = view.trick.rank;
+    const counts = {};
+    let jokers = 0;
+    view.myHand.forEach(c => {
+      if (c.rank === JOKER) jokers++;
+      else counts[c.rank] = (counts[c.rank] || 0) + 1;
+    });
+    const ranks = new Set();
+    let jokerUseful = false;
+    for (const q in counts) {
+      const rank = +q;
+      if (rank >= r) continue;
+      if (counts[q] + jokers >= k) {
+        ranks.add(rank);
+        if (counts[q] < k) jokerUseful = true; // nar nodig om de set vol te maken
+      }
+    }
+    return { ranks, jokerUseful };
   }
 
   function renderHand() {
@@ -214,22 +258,56 @@ const UI = (() => {
     hand.innerHTML = '';
     const cards = view.myHand;
     const n = cards.length;
+    const playable = playableInfo();
     cards.forEach((card, i) => {
       const c = makeCardEl(card);
       c.classList.add('in-hand');
       if (selected.has(card.id)) c.classList.add('selected');
+      if (playable && !(card.rank === JOKER ? playable.jokerUseful : playable.ranks.has(card.rank))) {
+        c.classList.add('dead'); // kan de slag niet verslaan
+      }
       const mid = (n - 1) / 2;
       c.style.setProperty('--rot', ((i - mid) * Math.min(3, 40 / n)) + 'deg');
       c.style.setProperty('--lift', (Math.abs(i - mid) * Math.min(2.2, 30 / n)) + 'px');
       c.style.setProperty('--deal', i);
-      c.addEventListener('click', () => {
-        if (selected.has(card.id)) { selected.delete(card.id); sfx.deselect(); }
-        else { selected.add(card.id); sfx.select(); }
-        renderHand();
-        renderButtons();
-      });
+      c.addEventListener('click', () => onHandCardClick(card));
       hand.appendChild(c);
     });
+  }
+
+  /* Tik-gedrag: één tik pakt meteen de hele benodigde set van die rang
+     (aangevuld met narren), een tik op een geselecteerde kaart haalt
+     alleen die kaart weg. Narren togglen los (die zijn wild). */
+  function onHandCardClick(card) {
+    const trick = view.trick;
+    if (selected.has(card.id)) {
+      selected.delete(card.id);
+      sfx.deselect();
+    } else if (card.rank === JOKER || !canAct) {
+      selected.add(card.id);
+      sfx.select();
+    } else {
+      selected.clear();
+      const same = view.myHand.filter(x => x.rank === card.rank);
+      let take = trick ? Math.min(trick.count, same.length) : same.length;
+      selected.add(card.id);
+      take--;
+      for (const x of same) {
+        if (take <= 0) break;
+        if (x.id !== card.id) { selected.add(x.id); take--; }
+      }
+      if (trick) {
+        // te weinig van deze rang: vul aan met narren
+        let need = trick.count - selected.size;
+        for (const x of view.myHand) {
+          if (need <= 0) break;
+          if (x.rank === JOKER) { selected.add(x.id); need--; }
+        }
+      }
+      sfx.select();
+    }
+    renderHand();
+    renderButtons();
   }
 
   function selectedCards() {
@@ -279,7 +357,7 @@ const UI = (() => {
       bubbles.delete(ev.actor);
       sfx.play();
       log(`${actor.face} <b>${actor.name}</b> speelt <b>${ev.count}× ${RANK_INFO[ev.rank].name}</b>`);
-      if (ev.rank === 1) { popup('DE DALMUTI!', 'gold'); shake(); }
+      if (ev.rank === 1) { popup('DE DALMUTI!', 'gold'); shake(); Music.excite(0.8); }
     }
 
     if (ev.finishedPos) {
@@ -299,6 +377,7 @@ const UI = (() => {
       }
       bubbles.clear();
       popup('SLAG GEWONNEN', ev.trickWon === view.meIdx ? 'gold' : '');
+      Music.excite(ev.trickWon === view.meIdx ? 0.65 : 0.4);
       renderOpponents();
       await sleep(400);
     }
@@ -310,9 +389,13 @@ const UI = (() => {
     const panel = $('#overlay-panel');
     panel.innerHTML = html;
     $('#overlay').classList.remove('hidden');
+    Music.duck(true);
     return panel;
   }
-  function hideOverlay() { $('#overlay').classList.add('hidden'); }
+  function hideOverlay() {
+    $('#overlay').classList.add('hidden');
+    Music.duck(false);
+  }
 
   function askRevolution(isGroteSloeber) {
     return new Promise(resolve => {
@@ -328,21 +411,29 @@ const UI = (() => {
     });
   }
 
-  function askGiveBack(k, receiverName, hand) {
+  function askGiveBack(k, receiverName, hand, received = []) {
     return new Promise(resolve => {
       const picked = new Set();
+      const receivedIds = new Set(received.map(c => c.id));
+      const receivedHtml = received.length ? `
+        <p class="overlay-text">Je ontving van <b>${receiverName}</b>:</p>
+        <div class="overlay-received" id="ov-received"></div>` : '';
       const panel = showOverlay(`
         <div class="panel-label">💰 BELASTING</div>
-        <p class="overlay-text">Kies <b class="num">${k}</b> kaart${k > 1 ? 'en' : ''} om terug te geven aan <b>${receiverName}</b>.</p>
+        ${receivedHtml}
+        <p class="overlay-text">Kies <b class="num">${k}</b> kaart${k > 1 ? 'en' : ''} om terug te geven.</p>
         <div class="overlay-hand" id="ov-hand"></div>
         <div class="overlay-buttons">
           <button class="btn btn-orange btn-big" id="ov-give" disabled>GEEF ${k} KAART${k > 1 ? 'EN' : ''}</button>
         </div>`);
+      const recvBox = panel.querySelector('#ov-received');
+      if (recvBox) received.forEach(card => recvBox.appendChild(makeCardEl(card, { small: true })));
       const handBox = panel.querySelector('#ov-hand');
       const giveBtn = panel.querySelector('#ov-give');
       hand.forEach(card => {
         const c = makeCardEl(card, { small: true });
         c.classList.add('pickable');
+        if (receivedIds.has(card.id)) c.classList.add('received'); // net gekregen
         c.onclick = () => {
           if (picked.has(card.id)) { picked.delete(card.id); c.classList.remove('selected'); sfx.deselect(); }
           else if (picked.size < k) { picked.add(card.id); c.classList.add('selected'); sfx.select(); }
@@ -410,6 +501,21 @@ const UI = (() => {
     $('#btn-sound').textContent = sfx.toggle() ? '🔊' : '🔇';
   });
 
+  $('#btn-music').addEventListener('click', () => {
+    $('#btn-music').classList.toggle('off', !Music.toggle());
+  });
+  $('#btn-music').classList.toggle('off', !Music.enabled);
+
+  // Spelregels-modal (los van het spel-overlay, kan prompts nooit verstoren)
+  const rulesEl = $('#rules');
+  $('.rules-body').innerHTML = numWrap($('.rules-body').innerHTML);
+  const openRules = () => { rulesEl.classList.remove('hidden'); sfx.select(); };
+  const closeRules = () => { rulesEl.classList.add('hidden'); sfx.deselect(); };
+  $('#btn-rules').addEventListener('click', openRules);
+  $('#btn-rules-start').addEventListener('click', openRules);
+  $('#btn-rules-close').addEventListener('click', closeRules);
+  rulesEl.addEventListener('click', e => { if (e.target === rulesEl) closeRules(); });
+
   // Mobiel: spelers/logboek als uitklapbaar paneel
   $('#btn-panels').addEventListener('click', () => {
     const open = document.body.classList.toggle('panels-open');
@@ -420,7 +526,7 @@ const UI = (() => {
     $, el, sleep, sfx, popup, shake, log, clearLog, makeCardEl,
     render, handleActionEv, headlineFor,
     setActions(a) { actions = a; },
-    setCanAct(b) { canAct = b; renderButtons(); },
+    setCanAct(b) { canAct = b; renderButtons(); Music.lift(b); },
     clearSelection() { selected.clear(); },
     setBubble(idx, text) { text ? bubbles.set(idx, text) : bubbles.delete(idx); },
     clearBubbles() { bubbles.clear(); },
@@ -478,6 +584,7 @@ const Solo = (() => {
     });
     UI.clearLog();
     UI.showScreen('game');
+    Music.start();
     startRound();
   }
 
@@ -516,6 +623,7 @@ const Solo = (() => {
       if (calls) {
         game.callRevolution(holder.idx);
         UI.sfx.revolution();
+        Music.excite(1);
         UI.shake(true);
         if (game.revolution === 'groot') {
           popup('GROTE REVOLUTIE!', 'big red');
@@ -539,7 +647,8 @@ const Solo = (() => {
       R();
       for (const pend of tax.pendingHuman) {
         const recv = game.player(pend.receiver);
-        const ids = await UI.askGiveBack(pend.k, recv.name, game.players[0].hand);
+        const flow = tax.flows.find(f => f.dir === 'belasting' && f.to === pend.giver && f.from === pend.receiver);
+        const ids = await UI.askGiveBack(pend.k, recv.name, game.players[0].hand, flow ? flow.cards : []);
         const cards = game.giveBack(pend.giver, ids, pend.receiver);
         log(`💰 <b>Jij</b> geeft ${cards.map(c => RANK_INFO[c.rank].name).join(', ')} terug aan <b>${recv.name}</b>`);
         R();

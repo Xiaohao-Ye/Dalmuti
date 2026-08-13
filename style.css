@@ -101,6 +101,7 @@ body {
 
 .btn-big { font-size: 26px; padding: 14px 34px; }
 .btn-small { font-size: 14px; padding: 8px 14px; }
+.btn.off { filter: saturate(0.2) brightness(0.65); }
 
 /* ============ STARTSCHERM ============ */
 
@@ -457,6 +458,24 @@ body {
 .pile-play .card:nth-child(odd) { transform: rotate(-2deg); }
 .pile-play .card:nth-child(even) { transform: rotate(2.5deg) translateY(3px); }
 
+/* Naamplaatje van wie de bovenste play is */
+.pile-owner {
+  position: absolute;
+  top: -34px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--panel-dark);
+  border: 2px solid var(--panel-edge);
+  color: #fff;
+  font-size: 15px;
+  padding: 3px 14px;
+  border-radius: 10px;
+  white-space: nowrap;
+  z-index: 6;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.35);
+}
+.pile-owner.me { border-color: var(--gold); color: var(--gold); }
+
 #pile-label {
   font-size: 17px;
   color: #cfd6de;
@@ -502,6 +521,7 @@ body {
 }
 .card .corner.tl { top: 7px; left: 9px; }
 .card .corner.br { bottom: 7px; right: 9px; transform: rotate(180deg); }
+.card .corner .joker-corner { font-size: 0.78em; }
 
 .card .card-art {
   position: absolute;
@@ -614,6 +634,12 @@ body {
     0 14px 22px var(--shadow);
 }
 
+/* Kaarten die de huidige slag niet kunnen verslaan */
+#hand .card.in-hand.dead {
+  filter: grayscale(0.75) brightness(0.72);
+}
+#hand .card.in-hand.dead:not(.selected) { transition-duration: 0.3s; }
+
 #hand.dealing .card.in-hand {
   animation: deal-in 0.45s cubic-bezier(0.2, 1.3, 0.4, 1) backwards, idle-rock 4s ease-in-out 0.6s infinite;
   animation-delay: calc(var(--deal) * 0.05s), 0.6s;
@@ -685,6 +711,21 @@ body {
   box-shadow: 0 0 0 3px var(--gold), 0 8px 14px var(--shadow);
 }
 
+/* Zojuist ontvangen belastingkaarten */
+.overlay-received {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin: 4px 0 14px;
+}
+.overlay-hand .card.received {
+  box-shadow: 0 0 0 2px var(--blue), 0 5px 0 rgba(0, 0, 0, 0.35), 0 8px 14px var(--shadow);
+}
+.overlay-hand .card.received::after {
+  border-color: var(--blue);
+  opacity: 0.8;
+}
+
 /* Ronde-uitslag */
 .results { list-style: none; margin: 6px 0 14px; }
 .result-row, .result-head {
@@ -710,6 +751,29 @@ body {
 .res-role { color: var(--gold); font-size: 14px; width: 130px; text-align: left; }
 .res-pts { color: #7ee081; width: 60px; font-family: var(--font-num); font-size: 18px; }
 .res-score { width: 55px; text-align: right; font-size: 21px; font-family: var(--font-num); }
+
+/* ============ SPELREGELS ============ */
+
+#rules {
+  position: fixed;
+  inset: 0;
+  background: rgba(8, 6, 20, 0.72);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 150; /* boven het spel-overlay */
+}
+
+.rules-panel { max-width: 580px; text-align: left; }
+.rules-panel .panel-label, .rules-panel .overlay-buttons { text-align: center; }
+.rules-body p {
+  margin-bottom: 13px;
+  font-size: 15px;
+  line-height: 1.55;
+  color: #dde3ea;
+}
+.rules-body b { color: var(--gold); font-weight: 600; }
 
 /* ============ POPUPS ============ */
 
@@ -769,7 +833,7 @@ body {
     align-items: center;
     gap: 10px;
     padding: 8px 10px;
-    margin-right: 118px; /* ruimte voor de vaste knoppen rechtsboven */
+    margin-right: 186px; /* ruimte voor de vaste knoppen rechtsboven */
   }
   #panel-status .round-label { font-size: 15px; white-space: nowrap; }
   #panel-status .trick-info {
@@ -843,6 +907,7 @@ body {
   #pile { min-height: 110px; }
   .pile-play .card { margin: 0 -16px; }
   #pile-label { font-size: 13px; margin-top: 2px; min-height: 22px; }
+  .pile-owner { font-size: 12px; top: -26px; padding: 2px 10px; }
 
   /* --- hand: platte, scrollbare rij met tap-selectie --- */
   #hand {

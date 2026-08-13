@@ -75,7 +75,12 @@ function isValidPlay(cards, trick) {
   if (sel.count !== trick.count)
     return { ok: false, reason: `Je moet precies ${trick.count} kaart${trick.count > 1 ? 'en' : ''} spelen.` };
   if (sel.rank >= trick.rank)
-    return { ok: false, reason: `Alleen een lagere rang dan ${trick.rank} (${RANK_INFO[trick.rank].name}) mag.` };
+    return {
+      ok: false,
+      reason: trick.rank === JOKER
+        ? 'Alleen een lagere rang dan de Nar 🃏 mag.'
+        : `Alleen een lagere rang dan ${trick.rank} (${RANK_INFO[trick.rank].name}) mag.`,
+    };
   return { ok: true, sel };
 }
 

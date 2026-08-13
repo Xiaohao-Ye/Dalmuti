@@ -1,0 +1,13 @@
+{
+  "name": "De Grote Dalmuti",
+  "short_name": "Dalmuti",
+  "description": "Het kaartspel De Grote Dalmuti in Balatro-stijl — tegen bots of online met vrienden.",
+  "start_url": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#16102e",
+  "theme_color": "#16102e",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

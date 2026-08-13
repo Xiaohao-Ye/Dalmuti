@@ -21,6 +21,9 @@ const MIME = {
   '.js': 'text/javascript; charset=utf-8',
   '.png': 'image/png',
   '.ico': 'image/x-icon',
+  '.svg': 'image/svg+xml',
+  '.webmanifest': 'application/manifest+json',
+  '.json': 'application/json',
 };
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
@@ -231,7 +234,11 @@ async function runRound(room) {
       if (room.phase !== 'playing') return;
       const seat = room.seats[pend.giver];
       const recvName = g.player(pend.receiver).name;
-      const ids = await ask(room, seat, { what: 'giveback', k: pend.k, receiverName: recvName }, 60000, null);
+      const flow = tax.flows.find(f => f.dir === 'belasting' && f.to === pend.giver && f.from === pend.receiver);
+      const ids = await ask(room, seat, {
+        what: 'giveback', k: pend.k, receiverName: recvName,
+        received: flow ? flow.cards : [],
+      }, 60000, null);
       const hand = g.player(pend.giver).hand;
       const valid = Array.isArray(ids) && ids.length === pend.k
         && ids.every(id => hand.some(c => c.id === id));
